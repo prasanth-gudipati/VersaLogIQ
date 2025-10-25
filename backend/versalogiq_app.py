@@ -471,17 +471,28 @@ Note: Each new session and operation is marked with decorative separators
             self.log_output(f"Error scanning log files: {str(e)}", "error")
             return {}
     
-    def get_log_file_tail(self, log_file_path, lines=250):
-        """Get the last N lines of a log file"""
+    def get_log_file_tail(self, log_file_path, lines=250, log_filter='all'):
+        """Get the last N lines of a log file with filtering options"""
         if not self.connected:
             self.log_output("Error: Not connected to server", "error")
             return None
         
         try:
-            self.log_output(f"Getting last {lines} lines from: {log_file_path}", "info")
+            self.log_output(f"Getting last {lines} lines from: {log_file_path} (filter: {log_filter})", "info")
             
-            # Build command
-            command = f"tail -n {lines} \"{log_file_path}\""
+            # Build command based on filter type
+            if log_filter == 'all':
+                # Show last N lines as raw format
+                command = f"tail -n {lines} \"{log_file_path}\""
+            elif log_filter == 'errors':
+                # Show only ERROR messages in last N lines with 2 spaces before each error
+                command = f"tail -n {lines} \"{log_file_path}\" | grep -i error | sed 's/^/  /'"
+            elif log_filter == 'pretty':
+                # Show all N logs but highlight errors with empty line before each error
+                command = f"tail -n {lines} \"{log_file_path}\" | sed '/[Ee][Rr][Rr][Oo][Rr]/i\\\\'"
+            else:
+                command = f"tail -n {lines} \"{log_file_path}\""
+            
             self.log_output(f"Executing command: {command}", "command")
             
             self.shell.send(f"{command}\n")
@@ -516,6 +527,7 @@ Note: Each new session and operation is marked with decorative separators
                 'lines_retrieved': len(cleaned_lines),
                 'content': log_content,
                 'command': command,
+                'filter': log_filter,
                 'timestamp': datetime.now().isoformat()
             }
             
@@ -653,10 +665,11 @@ def handle_scan_logs():
 
 @socketio.on('get_log_file_content')
 def handle_get_log_file_content(data):
-    """Handle request to get log file content"""
+    """Handle request to get log file content with filtering options"""
     client_versalogiq = get_client_instance()
     log_file_path = data.get('path', '')
     lines = data.get('lines', 250)
+    log_filter = data.get('filter', 'all')  # Default to 'all'
     
     if not log_file_path:
         emit('log_file_content_response', {
@@ -678,11 +691,12 @@ def handle_get_log_file_content(data):
     
     # Run log file content extraction in separate thread
     def get_log_file_content():
-        content = client_versalogiq.get_log_file_tail(log_file_path, lines)
+        content = client_versalogiq.get_log_file_tail(log_file_path, lines, log_filter)
         socketio.emit('log_file_content_response', {
             'path': log_file_path,
             'content': content,
-            'lines': lines
+            'lines': lines,
+            'filter': log_filter
         }, room=session_id)
     
     thread = threading.Thread(target=get_log_file_content, daemon=True)

@@ -672,6 +672,14 @@
                         <option value="1000">1000</option>
                     </select>
                 </div>
+                <div class="form-group">
+                    <label for="log-filter">Log filter:</label>
+                    <select id="log-filter">
+                        <option value="all">All</option>
+                        <option value="errors">Errors</option>
+                        <option value="pretty">Pretty format</option>
+                    </select>
+                </div>
                 <button id="view-log-btn" class="btn-warning" onclick="viewLogFile()" disabled>View Log Content</button>
             </div>
         </div>
@@ -842,10 +850,11 @@
                 window.currentLogContent = data.content;
 
                 const linesText = data.lines || data.content.lines_requested || 250;
+                const filterText = data.content.filter && data.content.filter !== 'all' ? ` (${data.content.filter} filter)` : '';
 
                 // Display log file content
                 let html = `<div class="log-info-header">
-                    System Log File - Last ${linesText} Lines
+                    System Log File - Last ${linesText} Lines${filterText}
                     <button class="popout-btn" onclick="popoutLogContent()" title="Open in new window">⧉</button>
                 </div>`;
 
@@ -1055,11 +1064,13 @@ Technical Error: ${details.technical_error}`;
         function viewLogFile() {
             const logsSelect = document.getElementById('logs-select');
             const logLinesSelect = document.getElementById('log-lines');
+            const logFilterSelect = document.getElementById('log-filter');
 
             const selectedLogPath = logsSelect.value;
             const numLines = parseInt(logLinesSelect.value) || 250;
+            const logFilter = logFilterSelect.value;
 
-            console.log('DEBUG: viewLogFile called with path:', selectedLogPath, 'lines:', numLines);
+            console.log('DEBUG: viewLogFile called with path:', selectedLogPath, 'lines:', numLines, 'filter:', logFilter);
 
             if (selectedLogPath) {
                 // Add status message to command output
@@ -1068,22 +1079,31 @@ Technical Error: ${details.technical_error}`;
                 line.className = 'output-line info';
                 const timestamp = new Date().toLocaleTimeString();
                 const filename = selectedLogPath.split('/').pop();
-                line.innerHTML = `<span class="timestamp">[${timestamp}]</span> Getting last ${numLines} lines from log file: ${escapeHtml(filename)}`;
+                const filterText = logFilter === 'all' ? '' : ` (${logFilter} filter)`;
+                line.innerHTML = `<span class="timestamp">[${timestamp}]</span> Getting last ${numLines} lines from log file: ${escapeHtml(filename)}${filterText}`;
                 output.appendChild(line);
                 output.scrollTop = output.scrollHeight;
+
+                // Build command based on filter
+                let commandText = `tail -n ${numLines} "${selectedLogPath}"`;
+                if (logFilter === 'errors') {
+                    commandText = `tail -n ${numLines} "${selectedLogPath}" | grep -i error | sed 's/^/  /'`;
+                } else if (logFilter === 'pretty') {
+                    commandText = `tail -n ${numLines} "${selectedLogPath}" | sed '/[Ee][Rr][Rr][Oo][Rr]/i\\\\'`;
+                }
 
                 // Add command line
                 const commandLine = document.createElement('div');
                 commandLine.className = 'output-line command';
-                commandLine.innerHTML = `<span class="timestamp">[${timestamp}]</span> Command: tail -n ${numLines} "${escapeHtml(selectedLogPath)}"`;
+                commandLine.innerHTML = `<span class="timestamp">[${timestamp}]</span> Command: ${escapeHtml(commandText)}`;
                 output.appendChild(commandLine);
                 output.scrollTop = output.scrollHeight;
 
                 // Switch to output view to show the status
                 switchToOutput();
 
-                console.log('DEBUG: Emitting get_log_file_content with path:', selectedLogPath, 'lines:', numLines);
-                socket.emit('get_log_file_content', { path: selectedLogPath, lines: numLines });
+                console.log('DEBUG: Emitting get_log_file_content with path:', selectedLogPath, 'lines:', numLines, 'filter:', logFilter);
+                socket.emit('get_log_file_content', { path: selectedLogPath, lines: numLines, filter: logFilter });
             } else {
                 console.log('DEBUG: No log file selected');
                 alert('Please select a log file first');
@@ -1134,6 +1154,7 @@ Technical Error: ${details.technical_error}`;
 
             const logData = window.currentLogContent;
             const filename = logData.path.split('/').pop();
+            const filterText = logData.filter && logData.filter !== 'all' ? ` (${logData.filter} filter)` : '';
 
             // Create HTML content for the pop-out window
             const popoutHtml = `
@@ -1142,7 +1163,7 @@ Technical Error: ${details.technical_error}`;
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Log File: ${filename} - VersaLogIQ</title>
+    <title>Log File: ${filename}${filterText} - VersaLogIQ</title>
     <style>
         body {
             font-family: 'Consolas', 'Monaco', monospace;
@@ -1221,7 +1242,7 @@ Technical Error: ${details.technical_error}`;
 </head>
 <body>
     <div class="header">
-        <h1>📄 Log File: ${escapeHtml(filename)}</h1>
+        <h1>📄 Log File: ${escapeHtml(filename)}${filterText}</h1>
     </div>
     
     <div class="info-section">
