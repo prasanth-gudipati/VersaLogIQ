@@ -640,7 +640,7 @@
                     <input type="text" id="username" value="admin">
                 </div>
                 <div class="form-group-inline">
-                    <label for="ssh_password">SSH Password:</label>
+                    <label for="ssh_password">Password:</label>
                     <input type="password" id="ssh_password" value="versa123">
                 </div>
                 <!-- Admin password field is hidden - automatically uses SSH password -->
@@ -851,18 +851,6 @@
 
                 html += '<div class="log-section">';
                 html += '<h4>Log File Information</h4>';
-                html += `<div class="log-property">
-                    <div class="log-property-name">File Path:</div>
-                    <div class="log-property-value">${data.content.path}</div>
-                </div>`;
-                html += `<div class="log-property">
-                    <div class="log-property-name">Lines Requested:</div>
-                    <div class="log-property-value">${data.content.lines_requested}</div>
-                </div>`;
-                html += `<div class="log-property">
-                    <div class="log-property-name">Lines Retrieved:</div>
-                    <div class="log-property-value">${data.content.lines_retrieved}</div>
-                </div>`;
                 html += `<div class="log-property">
                     <div class="log-property-name">Command:</div>
                     <div class="log-property-value">${data.content.command}</div>
@@ -1238,12 +1226,6 @@ Technical Error: ${details.technical_error}`;
     
     <div class="info-section">
         <div class="info-grid">
-            <div class="info-label">File Path:</div>
-            <div class="info-value">${escapeHtml(logData.path)}</div>
-            
-            <div class="info-label">Lines Retrieved:</div>
-            <div class="info-value">${logData.lines_retrieved}</div>
-            
             <div class="info-label">Command:</div>
             <div class="info-value">${escapeHtml(logData.command)}</div>
         </div>
