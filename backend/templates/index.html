@@ -870,7 +870,19 @@
                 html += '<div class="log-section">';
                 html += '<h4>Log File Content</h4>';
                 html += '<div class="log-content-area" style="max-height: 500px; overflow-y: auto;">';
-                html += escapeHtml(data.content.content);
+
+                // Apply special formatting for pretty mode
+                let logContent = data.content.content;
+                if (data.content.filter === 'pretty') {
+                    // First escape HTML, then apply pretty formatting with red highlighting
+                    logContent = escapeHtml(logContent);
+                    logContent = logContent.replace(/^.*[Ee][Rr][Rr][Oo][Rr].*$/gm, '<span style="color: #ff6b6b; font-weight: bold;">$&</span>');
+                } else {
+                    // For other modes, just escape HTML
+                    logContent = escapeHtml(logContent);
+                }
+
+                html += logContent;
                 html += '</div>';
                 html += '</div>';
 
@@ -1252,7 +1264,10 @@ Technical Error: ${details.technical_error}`;
         </div>
     </div>
     
-    <div class="content-section">${escapeHtml(logData.content)}</div>
+    <div class="content-section">${logData.filter === 'pretty'
+                    ? escapeHtml(logData.content).replace(/^.*[Ee][Rr][Rr][Oo][Rr].*$/gm, '<span style="color: #ff6b6b; font-weight: bold;">$&</span>')
+                    : escapeHtml(logData.content)
+                }</div>
     
     <div class="close-info">
         💡 Close this window to return to VersaLogIQ

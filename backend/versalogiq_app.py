@@ -593,6 +593,22 @@ def health():
     """Health check endpoint for Docker"""
     return jsonify({'status': 'healthy', 'service': 'VersaLogIQ'}), 200
 
+@app.route('/version')
+def version():
+    """Version endpoint to verify builds"""
+    return jsonify({
+        'service': 'VersaLogIQ',
+        'version': '1.0.1',
+        'build_time': datetime.now().isoformat(),
+        'features': [
+            'SSH Connection Management',
+            'Real-time Log Processing', 
+            'System Log Scanning',
+            'Docker Microservices Architecture',
+            'Enhanced Update Process'
+        ]
+    }), 200
+
 @socketio.on('connect')
 def handle_connect():
     """Handle client connection"""

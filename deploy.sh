@@ -60,12 +60,15 @@ show_help() {
     echo "  status      Show service status"
     echo "  logs        Show service logs"
     echo "  clean       Stop services and remove containers/volumes"
-    echo "  update      Pull latest images and restart"
+    echo "  update      Pull latest images, rebuild, and restart with verification"
+    echo "  changes     Check for code changes and git status"
     echo "  health      Check application health"
     echo "  help        Show this help message"
     echo ""
     echo "Examples:"
     echo "  $0 start              # Start VersaLogIQ"
+    echo "  $0 changes            # Check for code changes"
+    echo "  $0 update             # Update with rebuild and verification"
     echo "  $0 logs versalogiq-backend  # Show backend logs"
     echo "  $0 clean              # Clean shutdown and cleanup"
 }
@@ -139,12 +142,170 @@ clean_services() {
     fi
 }
 
-# Function to update services
+# Function to update services with enhanced build detection and verification
 update_services() {
     print_status "Updating VersaLogIQ services..."
+    
+    # Check if we're in a git repository for change tracking
+    local git_available=false
+    if command -v git &> /dev/null && git rev-parse --git-dir > /dev/null 2>&1; then
+        git_available=true
+        local current_commit=$(git rev-parse HEAD)
+        print_status "Current git commit: ${current_commit:0:8}"
+    fi
+    
+    # Store current container IDs for comparison
+    local old_backend_id=$(docker-compose ps -q versalogiq-backend 2>/dev/null || echo "")
+    
+    print_status "Pulling latest external images..."
     docker-compose pull
-    docker-compose up -d --build
-    print_success "VersaLogIQ services updated"
+    
+    print_status "Forcing rebuild of services to ensure code changes are applied..."
+    # Use --no-cache to force rebuild of our custom images
+    # Use --force-recreate to ensure containers are recreated even if config hasn't changed
+    docker-compose build --no-cache versalogiq-backend
+    
+    print_status "Stopping existing services to avoid configuration conflicts..."
+    docker-compose down > /dev/null 2>&1 || true
+    
+    print_status "Starting services with fresh containers..."
+    docker-compose up -d
+    
+    # Wait for services to stabilize
+    print_status "Waiting for services to stabilize..."
+    sleep 10
+    
+    # Verify services are healthy
+    print_status "Verifying service health..."
+    local health_check_passed=true
+    local max_retries=6  # 60 seconds total (6 * 10 seconds)
+    local retry_count=0
+    
+    while [ $retry_count -lt $max_retries ]; do
+        local unhealthy_services=$(docker-compose ps --format "table {{.Name}}\t{{.State}}" | grep -v "Up (healthy)" | grep -v "Name" | wc -l)
+        
+        if [ "$unhealthy_services" -eq 0 ]; then
+            print_success "All services are healthy!"
+            health_check_passed=true
+            break
+        else
+            retry_count=$((retry_count + 1))
+            print_warning "Services still starting... (attempt $retry_count/$max_retries)"
+            docker-compose ps
+            sleep 10
+        fi
+    done
+    
+    if [ "$health_check_passed" = false ]; then
+        print_error "Some services failed health checks after update!"
+        docker-compose ps
+        print_error "Update may have failed. Check logs with: $0 logs"
+        return 1
+    fi
+    
+    # Test application endpoint
+    print_status "Testing application endpoint..."
+    local endpoint_test_passed=false
+    local endpoint_retry_count=0
+    local max_endpoint_retries=3
+    
+    while [ $endpoint_retry_count -lt $max_endpoint_retries ]; do
+        if curl -f http://localhost:5000/health > /dev/null 2>&1; then
+            print_success "Application endpoint is responding!"
+            endpoint_test_passed=true
+            break
+        else
+            endpoint_retry_count=$((endpoint_retry_count + 1))
+            print_warning "Endpoint test failed, retrying... (attempt $endpoint_retry_count/$max_endpoint_retries)"
+            sleep 5
+        fi
+    done
+    
+    if [ "$endpoint_test_passed" = false ]; then
+        print_error "Application endpoint is not responding after update!"
+        print_error "Check logs with: $0 logs versalogiq-backend"
+        return 1
+    fi
+    
+    # Show new container information
+    local new_backend_id=$(docker-compose ps -q versalogiq-backend 2>/dev/null || echo "")
+    if [ "$old_backend_id" != "$new_backend_id" ] && [ -n "$new_backend_id" ]; then
+        print_success "Backend container was recreated (old: ${old_backend_id:0:12}, new: ${new_backend_id:0:12})"
+    fi
+    
+    # Show final status
+    print_status "Final service status:"
+    docker-compose ps
+    
+    if [ "$git_available" = true ]; then
+        local new_commit=$(git rev-parse HEAD)
+        if [ "$current_commit" != "$new_commit" ]; then
+            print_success "Git commit updated from ${current_commit:0:8} to ${new_commit:0:8}"
+        else
+            print_status "Git commit unchanged: ${current_commit:0:8}"
+        fi
+    fi
+    
+    print_success "VersaLogIQ services updated and verified successfully!"
+    print_status "Access the application at:"
+    print_status "  • Direct Backend: http://localhost:5000"
+    print_status "  • Via Nginx: http://localhost"
+    print_status "  • Health Check: http://localhost:5000/health"
+}
+
+# Function to check for code changes and show diff
+check_changes() {
+    print_status "Checking for code changes..."
+    
+    if ! command -v git &> /dev/null; then
+        print_warning "Git not available. Cannot check for changes."
+        return 1
+    fi
+    
+    if ! git rev-parse --git-dir > /dev/null 2>&1; then
+        print_warning "Not in a git repository. Cannot check for changes."
+        return 1
+    fi
+    
+    # Check if there are uncommitted changes
+    if ! git diff-index --quiet HEAD --; then
+        print_status "Uncommitted changes found:"
+        git diff --name-status
+        echo ""
+        print_status "Modified files details:"
+        git diff --stat
+        echo ""
+        print_warning "You have uncommitted changes that will be included in the build."
+    else
+        print_success "No uncommitted changes found."
+    fi
+    
+    # Check recent commits
+    print_status "Recent commits (last 5):"
+    git log --oneline -5
+    
+    # Show current branch and status
+    local current_branch=$(git branch --show-current 2>/dev/null || echo "unknown")
+    print_status "Current branch: $current_branch"
+    
+    # Check if we're ahead/behind remote
+    if git remote > /dev/null 2>&1; then
+        local remote_branch="origin/$current_branch"
+        if git rev-parse --verify "$remote_branch" > /dev/null 2>&1; then
+            local ahead=$(git rev-list --count HEAD..$remote_branch 2>/dev/null || echo "0")
+            local behind=$(git rev-list --count $remote_branch..HEAD 2>/dev/null || echo "0")
+            
+            if [ "$ahead" -gt 0 ]; then
+                print_warning "Your branch is $ahead commits behind remote."
+            fi
+            if [ "$behind" -gt 0 ]; then
+                print_status "Your branch is $behind commits ahead of remote."
+            fi
+            if [ "$ahead" -eq 0 ] && [ "$behind" -eq 0 ]; then
+                print_success "Your branch is up to date with remote."
+            fi
+        fi
+    fi
 }
 
 # Function to check health
@@ -200,6 +361,9 @@ case "${1:-help}" in
         ;;
     "update")
         update_services
+        ;;
+    "changes")
+        check_changes
         ;;
     "health")
         check_health

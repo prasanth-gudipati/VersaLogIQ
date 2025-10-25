@@ -49,3 +49,315 @@ Starting Operation: System Log Files Scanning
 ================================================================================
 SESSION ENDED - Disconnected from 10.70.188.171
 [2025-10-19 22:22:27] [INFO] Disconnected from server
+
+================================================================================
+🚀 NEW SESSION STARTED - 2025-10-24 19:11:27
+================================================================================
+VersaLogIQ Session Started
+[2025-10-24 19:11:27] [INFO] Attempting SSH connection...
+[2025-10-24 19:11:27] [SUCCESS] SSH connection successful to 10.73.21.106
+[2025-10-24 19:11:28] [SUCCESS] Shell session established
+[2025-10-24 19:11:28] [COMMAND] Executing 'sudo su' command...
+[2025-10-24 19:11:30] [SUCCESS] Sudo elevation successful
+[2025-10-24 19:11:30] [SUCCESS] Connection successful! Starting log file scanning...
+
+------------------------------------------------------------
+⚡ NEW OPERATION - 2025-10-24 19:11:31
+------------------------------------------------------------
+Starting Operation: System Log Files Scanning
+[2025-10-24 19:11:31] [INFO] Scanning for log files in /var/log directory
+[2025-10-24 19:11:31] [COMMAND] Executing command: find /var/log -type f -name '*.log*' ! -name '*.gz' | sort
+[2025-10-24 19:11:34] [SUCCESS] -> Found 125 log files across 21 directories (excluding .gz files)
+[2025-10-24 19:11:34] [INFO]   aide: 3 files -> aide.log, aide.log.0, aideinit.log
+[2025-10-24 19:11:34] [INFO]   alternatives.log: 1 files -> alternatives.log
+[2025-10-24 19:11:34] [INFO]   alternatives.log.1: 1 files -> alternatives.log.1
+[2025-10-24 19:11:34] [INFO]   apt: 3 files -> eipp.log.xz, history.log, term.log
+[2025-10-24 19:11:34] [INFO]   audit: 5 files -> audit.log, audit.log.1, audit.log.2...
+[2025-10-24 19:11:34] [INFO]   bootstrap.log: 1 files -> bootstrap.log
+[2025-10-24 19:11:34] [INFO]   cron.log: 1 files -> cron.log
+[2025-10-24 19:11:34] [INFO]   cron.log.1: 1 files -> cron.log.1
+[2025-10-24 19:11:34] [INFO]   dpkg.log: 1 files -> dpkg.log
+[2025-10-24 19:11:34] [INFO]   dpkg.log.1: 1 files -> dpkg.log.1
+[2025-10-24 19:11:34] [INFO]   fail2ban.log: 1 files -> fail2ban.log
+[2025-10-24 19:11:34] [INFO]   fail2ban.log.1: 1 files -> fail2ban.log.1
+[2025-10-24 19:11:34] [INFO]   fontconfig.log: 1 files -> fontconfig.log
+[2025-10-24 19:11:34] [INFO]   kern.log: 1 files -> kern.log
+[2025-10-24 19:11:34] [INFO]   kern.log.1: 1 files -> kern.log.1
+[2025-10-24 19:11:34] [INFO]   old_monit.log: 1 files -> old_monit.log
+[2025-10-24 19:11:34] [INFO]   qat.log: 1 files -> qat.log
+[2025-10-24 19:11:34] [INFO]   ubuntu-advantage.log: 1 files -> ubuntu-advantage.log
+[2025-10-24 19:11:34] [INFO]   ubuntu-advantage.log.1: 1 files -> ubuntu-advantage.log.1
+[2025-10-24 19:11:34] [INFO]   versa: 97 files -> audit.log, confd.log, confderr.log.idx...
+[2025-10-24 19:11:34] [INFO]   watchdog: 1 files -> heartbeat.log
+[2025-10-24 19:14:33] [INFO] Disconnecting from server...
+
+================================================================================
+🚀 NEW SESSION STARTED - 2025-10-24 19:14:34
+================================================================================
+SESSION ENDED - Disconnected from 10.73.21.106
+[2025-10-24 19:14:34] [INFO] Disconnected from server
+
+================================================================================
+🚀 NEW SESSION STARTED - 2025-10-25 18:03:43
+================================================================================
+VersaLogIQ Session Started
+[2025-10-25 18:03:43] [INFO] Attempting SSH connection...
+[2025-10-25 18:03:43] [SUCCESS] SSH connection successful to 10.73.21.106
+[2025-10-25 18:03:44] [SUCCESS] Shell session established
+[2025-10-25 18:03:44] [COMMAND] Executing 'sudo su' command...
+[2025-10-25 18:03:46] [SUCCESS] Sudo elevation successful
+[2025-10-25 18:03:46] [SUCCESS] Connection successful! Starting log file scanning...
+
+------------------------------------------------------------
+⚡ NEW OPERATION - 2025-10-25 18:03:47
+------------------------------------------------------------
+Starting Operation: System Log Files Scanning
+[2025-10-25 18:03:47] [INFO] Scanning for log files in /var/log directory
+[2025-10-25 18:03:47] [COMMAND] Executing command: find /var/log -type f -name '*.log*' ! -name '*.gz' | sort
+[2025-10-25 18:03:50] [SUCCESS] -> Found 125 log files across 21 directories (excluding .gz files)
+[2025-10-25 18:03:50] [INFO]   aide: 3 files -> aide.log, aide.log.0, aideinit.log
+[2025-10-25 18:03:50] [INFO]   alternatives.log: 1 files -> alternatives.log
+[2025-10-25 18:03:50] [INFO]   alternatives.log.1: 1 files -> alternatives.log.1
+[2025-10-25 18:03:50] [INFO]   apt: 3 files -> eipp.log.xz, history.log, term.log
+[2025-10-25 18:03:50] [INFO]   audit: 5 files -> audit.log, audit.log.1, audit.log.2...
+[2025-10-25 18:03:50] [INFO]   bootstrap.log: 1 files -> bootstrap.log
+[2025-10-25 18:03:50] [INFO]   cron.log: 1 files -> cron.log
+[2025-10-25 18:03:50] [INFO]   cron.log.1: 1 files -> cron.log.1
+[2025-10-25 18:03:50] [INFO]   dpkg.log: 1 files -> dpkg.log
+[2025-10-25 18:03:50] [INFO]   dpkg.log.1: 1 files -> dpkg.log.1
+[2025-10-25 18:03:50] [INFO]   fail2ban.log: 1 files -> fail2ban.log
+[2025-10-25 18:03:50] [INFO]   fail2ban.log.1: 1 files -> fail2ban.log.1
+[2025-10-25 18:03:50] [INFO]   fontconfig.log: 1 files -> fontconfig.log
+[2025-10-25 18:03:50] [INFO]   kern.log: 1 files -> kern.log
+[2025-10-25 18:03:50] [INFO]   kern.log.1: 1 files -> kern.log.1
+[2025-10-25 18:03:50] [INFO]   old_monit.log: 1 files -> old_monit.log
+[2025-10-25 18:03:50] [INFO]   qat.log: 1 files -> qat.log
+[2025-10-25 18:03:50] [INFO]   ubuntu-advantage.log: 1 files -> ubuntu-advantage.log
+[2025-10-25 18:03:50] [INFO]   ubuntu-advantage.log.1: 1 files -> ubuntu-advantage.log.1
+[2025-10-25 18:03:50] [INFO]   versa: 97 files -> audit.log, confd.log, confderr.log.idx...
+[2025-10-25 18:03:50] [INFO]   watchdog: 1 files -> heartbeat.log
+
+================================================================================
+🚀 NEW SESSION STARTED - 2025-10-25 18:08:44
+================================================================================
+VersaLogIQ Session Started
+[2025-10-25 18:08:44] [INFO] Attempting SSH connection...
+[2025-10-25 18:08:44] [SUCCESS] SSH connection successful to 10.73.21.107
+[2025-10-25 18:08:45] [SUCCESS] Shell session established
+[2025-10-25 18:08:45] [COMMAND] Executing 'sudo su' command...
+[2025-10-25 18:08:47] [SUCCESS] Sudo elevation successful
+[2025-10-25 18:08:47] [SUCCESS] Connection successful! Starting log file scanning...
+
+------------------------------------------------------------
+⚡ NEW OPERATION - 2025-10-25 18:08:48
+------------------------------------------------------------
+Starting Operation: System Log Files Scanning
+[2025-10-25 18:08:48] [INFO] Scanning for log files in /var/log directory
+[2025-10-25 18:08:48] [COMMAND] Executing command: find /var/log -type f -name '*.log*' ! -name '*.gz' | sort
+[2025-10-25 18:08:51] [SUCCESS] -> Found 124 log files across 21 directories (excluding .gz files)
+[2025-10-25 18:08:51] [INFO]   aide: 3 files -> aide.log, aide.log.0, aideinit.log
+[2025-10-25 18:08:51] [INFO]   alternatives.log: 1 files -> alternatives.log
+[2025-10-25 18:08:51] [INFO]   alternatives.log.1: 1 files -> alternatives.log.1
+[2025-10-25 18:08:51] [INFO]   apt: 3 files -> eipp.log.xz, history.log, term.log
+[2025-10-25 18:08:51] [INFO]   audit: 5 files -> audit.log, audit.log.1, audit.log.2...
+[2025-10-25 18:08:51] [INFO]   bootstrap.log: 1 files -> bootstrap.log
+[2025-10-25 18:08:51] [INFO]   cron.log: 1 files -> cron.log
+[2025-10-25 18:08:51] [INFO]   cron.log.1: 1 files -> cron.log.1
+[2025-10-25 18:08:51] [INFO]   dpkg.log: 1 files -> dpkg.log
+[2025-10-25 18:08:51] [INFO]   dpkg.log.1: 1 files -> dpkg.log.1
+[2025-10-25 18:08:51] [INFO]   fail2ban.log: 1 files -> fail2ban.log
+[2025-10-25 18:08:51] [INFO]   fail2ban.log.1: 1 files -> fail2ban.log.1
+[2025-10-25 18:08:51] [INFO]   fontconfig.log: 1 files -> fontconfig.log
+[2025-10-25 18:08:51] [INFO]   kern.log: 1 files -> kern.log
+[2025-10-25 18:08:51] [INFO]   kern.log.1: 1 files -> kern.log.1
+[2025-10-25 18:08:51] [INFO]   old_monit.log: 1 files -> old_monit.log
+[2025-10-25 18:08:51] [INFO]   qat.log: 1 files -> qat.log
+[2025-10-25 18:08:51] [INFO]   ubuntu-advantage.log: 1 files -> ubuntu-advantage.log
+[2025-10-25 18:08:51] [INFO]   ubuntu-advantage.log.1: 1 files -> ubuntu-advantage.log.1
+[2025-10-25 18:08:51] [INFO]   versa: 96 files -> audit.log, confd.log, confderr.log.idx...
+[2025-10-25 18:08:51] [INFO]   watchdog: 1 files -> heartbeat.log
+[2025-10-25 18:08:57] [INFO] Disconnecting from server...
+
+================================================================================
+🚀 NEW SESSION STARTED - 2025-10-25 18:08:57
+================================================================================
+SESSION ENDED - Disconnected from 10.73.21.107
+[2025-10-25 18:08:57] [INFO] Disconnected from server
+[2025-10-25 18:09:06] [INFO] Getting last 250 lines from: /var/log/audit/audit.log.4
+[2025-10-25 18:09:06] [COMMAND] Executing command: tail -n 250 "/var/log/audit/audit.log.4"
+[2025-10-25 18:09:10] [SUCCESS] -> Successfully retrieved 250 lines from log file
+[2025-10-25 18:13:37] [INFO] Disconnecting from server...
+
+================================================================================
+🚀 NEW SESSION STARTED - 2025-10-25 18:13:38
+================================================================================
+SESSION ENDED - Disconnected from 10.73.21.106
+[2025-10-25 18:13:38] [INFO] Disconnected from server
+
+================================================================================
+🚀 NEW SESSION STARTED - 2025-10-25 18:15:21
+================================================================================
+VersaLogIQ Session Started
+[2025-10-25 18:15:21] [INFO] Attempting SSH connection...
+[2025-10-25 18:15:21] [SUCCESS] SSH connection successful to 10.73.21.107
+[2025-10-25 18:15:22] [SUCCESS] Shell session established
+[2025-10-25 18:15:22] [COMMAND] Executing 'sudo su' command...
+[2025-10-25 18:15:24] [SUCCESS] Sudo elevation successful
+[2025-10-25 18:15:24] [SUCCESS] Connection successful! Starting log file scanning...
+
+------------------------------------------------------------
+⚡ NEW OPERATION - 2025-10-25 18:15:25
+------------------------------------------------------------
+Starting Operation: System Log Files Scanning
+[2025-10-25 18:15:25] [INFO] Scanning for log files in /var/log directory
+[2025-10-25 18:15:25] [COMMAND] Executing command: find /var/log -type f -name '*.log*' ! -name '*.gz' | sort
+[2025-10-25 18:15:28] [SUCCESS] -> Found 124 log files across 21 directories (excluding .gz files)
+[2025-10-25 18:15:28] [INFO]   aide: 3 files -> aide.log, aide.log.0, aideinit.log
+[2025-10-25 18:15:28] [INFO]   alternatives.log: 1 files -> alternatives.log
+[2025-10-25 18:15:28] [INFO]   alternatives.log.1: 1 files -> alternatives.log.1
+[2025-10-25 18:15:28] [INFO]   apt: 3 files -> eipp.log.xz, history.log, term.log
+[2025-10-25 18:15:28] [INFO]   audit: 5 files -> audit.log, audit.log.1, audit.log.2...
+[2025-10-25 18:15:28] [INFO]   bootstrap.log: 1 files -> bootstrap.log
+[2025-10-25 18:15:28] [INFO]   cron.log: 1 files -> cron.log
+[2025-10-25 18:15:28] [INFO]   cron.log.1: 1 files -> cron.log.1
+[2025-10-25 18:15:28] [INFO]   dpkg.log: 1 files -> dpkg.log
+[2025-10-25 18:15:28] [INFO]   dpkg.log.1: 1 files -> dpkg.log.1
+[2025-10-25 18:15:28] [INFO]   fail2ban.log: 1 files -> fail2ban.log
+[2025-10-25 18:15:28] [INFO]   fail2ban.log.1: 1 files -> fail2ban.log.1
+[2025-10-25 18:15:28] [INFO]   fontconfig.log: 1 files -> fontconfig.log
+[2025-10-25 18:15:28] [INFO]   kern.log: 1 files -> kern.log
+[2025-10-25 18:15:28] [INFO]   kern.log.1: 1 files -> kern.log.1
+[2025-10-25 18:15:28] [INFO]   old_monit.log: 1 files -> old_monit.log
+[2025-10-25 18:15:28] [INFO]   qat.log: 1 files -> qat.log
+[2025-10-25 18:15:28] [INFO]   ubuntu-advantage.log: 1 files -> ubuntu-advantage.log
+[2025-10-25 18:15:28] [INFO]   ubuntu-advantage.log.1: 1 files -> ubuntu-advantage.log.1
+[2025-10-25 18:15:28] [INFO]   versa: 96 files -> audit.log, confd.log, confderr.log.idx...
+[2025-10-25 18:15:28] [INFO]   watchdog: 1 files -> heartbeat.log
+[2025-10-25 18:15:49] [INFO] Getting last 250 lines from: /var/log/versa/versa-service.log
+[2025-10-25 18:15:49] [COMMAND] Executing command: tail -n 250 "/var/log/versa/versa-service.log"
+[2025-10-25 18:15:52] [SUCCESS] -> Successfully retrieved 250 lines from log file
+[2025-10-25 18:16:21] [INFO] Getting last 500 lines from: /var/log/versa/versa-service.log
+[2025-10-25 18:16:21] [COMMAND] Executing command: tail -n 500 "/var/log/versa/versa-service.log"
+[2025-10-25 18:16:25] [SUCCESS] -> Successfully retrieved 500 lines from log file
+[2025-10-25 18:16:58] [INFO] Disconnecting from server...
+
+================================================================================
+🚀 NEW SESSION STARTED - 2025-10-25 18:16:59
+================================================================================
+SESSION ENDED - Disconnected from 10.73.21.107
+[2025-10-25 18:16:59] [INFO] Disconnected from server
+
+================================================================================
+🚀 NEW SESSION STARTED - 2025-10-25 18:28:35
+================================================================================
+VersaLogIQ Session Started
+[2025-10-25 18:28:35] [INFO] Attempting SSH connection...
+[2025-10-25 18:28:35] [SUCCESS] SSH connection successful to 10.73.21.106
+[2025-10-25 18:28:36] [SUCCESS] Shell session established
+[2025-10-25 18:28:36] [COMMAND] Executing 'sudo su' command...
+[2025-10-25 18:28:38] [SUCCESS] Sudo elevation successful
+[2025-10-25 18:28:38] [SUCCESS] Connection successful! Starting log file scanning...
+
+------------------------------------------------------------
+⚡ NEW OPERATION - 2025-10-25 18:28:39
+------------------------------------------------------------
+Starting Operation: System Log Files Scanning
+[2025-10-25 18:28:39] [INFO] Scanning for log files in /var/log directory
+[2025-10-25 18:28:39] [COMMAND] Executing command: find /var/log -type f -name '*.log*' ! -name '*.gz' | sort
+[2025-10-25 18:28:42] [SUCCESS] -> Found 125 log files across 21 directories (excluding .gz files)
+[2025-10-25 18:28:42] [INFO]   aide: 3 files -> aide.log, aide.log.0, aideinit.log
+[2025-10-25 18:28:42] [INFO]   alternatives.log: 1 files -> alternatives.log
+[2025-10-25 18:28:42] [INFO]   alternatives.log.1: 1 files -> alternatives.log.1
+[2025-10-25 18:28:42] [INFO]   apt: 3 files -> eipp.log.xz, history.log, term.log
+[2025-10-25 18:28:42] [INFO]   audit: 5 files -> audit.log, audit.log.1, audit.log.2...
+[2025-10-25 18:28:42] [INFO]   bootstrap.log: 1 files -> bootstrap.log
+[2025-10-25 18:28:42] [INFO]   cron.log: 1 files -> cron.log
+[2025-10-25 18:28:42] [INFO]   cron.log.1: 1 files -> cron.log.1
+[2025-10-25 18:28:42] [INFO]   dpkg.log: 1 files -> dpkg.log
+[2025-10-25 18:28:42] [INFO]   dpkg.log.1: 1 files -> dpkg.log.1
+[2025-10-25 18:28:42] [INFO]   fail2ban.log: 1 files -> fail2ban.log
+[2025-10-25 18:28:42] [INFO]   fail2ban.log.1: 1 files -> fail2ban.log.1
+[2025-10-25 18:28:42] [INFO]   fontconfig.log: 1 files -> fontconfig.log
+[2025-10-25 18:28:42] [INFO]   kern.log: 1 files -> kern.log
+[2025-10-25 18:28:42] [INFO]   kern.log.1: 1 files -> kern.log.1
+[2025-10-25 18:28:42] [INFO]   old_monit.log: 1 files -> old_monit.log
+[2025-10-25 18:28:42] [INFO]   qat.log: 1 files -> qat.log
+[2025-10-25 18:28:42] [INFO]   ubuntu-advantage.log: 1 files -> ubuntu-advantage.log
+[2025-10-25 18:28:42] [INFO]   ubuntu-advantage.log.1: 1 files -> ubuntu-advantage.log.1
+[2025-10-25 18:28:42] [INFO]   versa: 97 files -> audit.log, confd.log, confderr.log.idx...
+[2025-10-25 18:28:42] [INFO]   watchdog: 1 files -> heartbeat.log
+[2025-10-25 18:37:15] [INFO] Disconnecting from server...
+
+================================================================================
+🚀 NEW SESSION STARTED - 2025-10-25 18:37:15
+================================================================================
+SESSION ENDED - Disconnected from 10.73.21.106
+[2025-10-25 18:37:15] [INFO] Disconnected from server
+
+================================================================================
+🚀 NEW SESSION STARTED - 2025-10-25 19:33:39
+================================================================================
+VersaLogIQ Session Started
+[2025-10-25 19:33:39] [INFO] Attempting SSH connection...
+[2025-10-25 19:33:39] [SUCCESS] SSH connection successful to 10.73.21.106
+[2025-10-25 19:33:40] [SUCCESS] Shell session established
+[2025-10-25 19:33:40] [COMMAND] Executing 'sudo su' command...
+[2025-10-25 19:33:42] [SUCCESS] Sudo elevation successful
+[2025-10-25 19:33:42] [SUCCESS] Connection successful! Starting log file scanning...
+
+------------------------------------------------------------
+⚡ NEW OPERATION - 2025-10-25 19:33:43
+------------------------------------------------------------
+Starting Operation: System Log Files Scanning
+[2025-10-25 19:33:43] [INFO] Scanning for log files in /var/log directory
+[2025-10-25 19:33:43] [COMMAND] Executing command: find /var/log -type f -name '*.log*' ! -name '*.gz' | sort
+[2025-10-25 19:33:46] [SUCCESS] -> Found 125 log files across 21 directories (excluding .gz files)
+[2025-10-25 19:33:46] [INFO]   aide: 3 files -> aide.log, aide.log.0, aideinit.log
+[2025-10-25 19:33:46] [INFO]   alternatives.log: 1 files -> alternatives.log
+[2025-10-25 19:33:46] [INFO]   alternatives.log.1: 1 files -> alternatives.log.1
+[2025-10-25 19:33:46] [INFO]   apt: 3 files -> eipp.log.xz, history.log, term.log
+[2025-10-25 19:33:46] [INFO]   audit: 5 files -> audit.log, audit.log.1, audit.log.2...
+[2025-10-25 19:33:46] [INFO]   bootstrap.log: 1 files -> bootstrap.log
+[2025-10-25 19:33:46] [INFO]   cron.log: 1 files -> cron.log
+[2025-10-25 19:33:46] [INFO]   cron.log.1: 1 files -> cron.log.1
+[2025-10-25 19:33:46] [INFO]   dpkg.log: 1 files -> dpkg.log
+[2025-10-25 19:33:46] [INFO]   dpkg.log.1: 1 files -> dpkg.log.1
+[2025-10-25 19:33:46] [INFO]   fail2ban.log: 1 files -> fail2ban.log
+[2025-10-25 19:33:46] [INFO]   fail2ban.log.1: 1 files -> fail2ban.log.1
+[2025-10-25 19:33:46] [INFO]   fontconfig.log: 1 files -> fontconfig.log
+[2025-10-25 19:33:46] [INFO]   kern.log: 1 files -> kern.log
+[2025-10-25 19:33:46] [INFO]   kern.log.1: 1 files -> kern.log.1
+[2025-10-25 19:33:46] [INFO]   old_monit.log: 1 files -> old_monit.log
+[2025-10-25 19:33:46] [INFO]   qat.log: 1 files -> qat.log
+[2025-10-25 19:33:46] [INFO]   ubuntu-advantage.log: 1 files -> ubuntu-advantage.log
+[2025-10-25 19:33:46] [INFO]   ubuntu-advantage.log.1: 1 files -> ubuntu-advantage.log.1
+[2025-10-25 19:33:46] [INFO]   versa: 97 files -> audit.log, confd.log, confderr.log.idx...
+[2025-10-25 19:33:46] [INFO]   watchdog: 1 files -> heartbeat.log
+[2025-10-25 19:34:08] [INFO] Getting last 1000 lines from: /var/log/versa/versa-service.log (filter: errors)
+[2025-10-25 19:34:08] [COMMAND] Executing command: tail -n 1000 "/var/log/versa/versa-service.log" | grep -i error | sed 's/^/  /'
+[2025-10-25 19:34:12] [SUCCESS] -> Successfully retrieved 311 lines from log file
+[2025-10-25 19:34:21] [INFO] Getting last 1000 lines from: /var/log/versa/versa-service.log (filter: pretty)
+[2025-10-25 19:34:21] [COMMAND] Executing command: tail -n 1000 "/var/log/versa/versa-service.log" | sed '/[Ee][Rr][Rr][Oo][Rr]/i\\'
+[2025-10-25 19:34:28] [SUCCESS] -> Successfully retrieved 1311 lines from log file
+[2025-10-25 19:34:46] [INFO] Getting last 1000 lines from: /var/log/versa/versa-rtd.log (filter: pretty)
+[2025-10-25 19:34:46] [COMMAND] Executing command: tail -n 1000 "/var/log/versa/versa-rtd.log" | sed '/[Ee][Rr][Rr][Oo][Rr]/i\\'
+[2025-10-25 19:34:51] [SUCCESS] -> Successfully retrieved 1004 lines from log file
+[2025-10-25 19:35:01] [INFO] Getting last 1000 lines from: /var/log/versa/versa-rtd.log (filter: errors)
+[2025-10-25 19:35:01] [COMMAND] Executing command: tail -n 1000 "/var/log/versa/versa-rtd.log" | grep -i error | sed 's/^/  /'
+[2025-10-25 19:35:03] [SUCCESS] -> Successfully retrieved 4 lines from log file
+[2025-10-25 19:35:12] [INFO] Getting last 1000 lines from: /var/log/versa/versa-rtd.log (filter: pretty)
+[2025-10-25 19:35:12] [COMMAND] Executing command: tail -n 1000 "/var/log/versa/versa-rtd.log" | sed '/[Ee][Rr][Rr][Oo][Rr]/i\\'
+[2025-10-25 19:35:17] [SUCCESS] -> Successfully retrieved 1004 lines from log file
+[2025-10-25 19:35:33] [INFO] Getting last 100 lines from: /var/log/versa/versa-rtd.log (filter: errors)
+[2025-10-25 19:35:33] [COMMAND] Executing command: tail -n 100 "/var/log/versa/versa-rtd.log" | grep -i error | sed 's/^/  /'
+[2025-10-25 19:35:35] [SUCCESS] -> Successfully retrieved 2 lines from log file
+[2025-10-25 19:35:39] [INFO] Getting last 100 lines from: /var/log/versa/versa-rtd.log (filter: pretty)
+[2025-10-25 19:35:39] [COMMAND] Executing command: tail -n 100 "/var/log/versa/versa-rtd.log" | sed '/[Ee][Rr][Rr][Oo][Rr]/i\\'
+[2025-10-25 19:35:41] [SUCCESS] -> Successfully retrieved 102 lines from log file
+[2025-10-25 19:36:02] [INFO] Disconnecting from server...
+
+================================================================================
+🚀 NEW SESSION STARTED - 2025-10-25 19:36:02
+================================================================================
+SESSION ENDED - Disconnected from 10.73.21.106
+[2025-10-25 19:36:02] [INFO] Disconnected from server
