@@ -204,10 +204,84 @@ The changes maintain backward compatibility:
 4. **Reduced Cognitive Load**: Less information to process, easier decision making
 5. **Professional Appearance**: Streamlined design that looks more polished
 
+## Advanced Log Viewing Features (Phase 3) ✅
+
+### 6. VMS-Tool-Web Style Log Filtering
+**Enhancement**: Implement three log viewing options similar to VMS-Tool-Web
+
+**Implementation Details**:
+- **Backend Changes (`versalogiq_app.py`)**:
+  - Modified `get_log_file_tail()` method to accept `log_filter` parameter
+  - Added three filtering modes with different command implementations:
+    - **All**: Raw log content using `tail -n {lines} "{log_file_path}"`
+    - **Errors**: Error-only view using `tail -n {lines} "{log_file_path}" | grep -i error | sed 's/^/  /'`
+    - **Pretty**: Highlighted errors using `tail -n {lines} "{log_file_path}" | sed '/[Ee][Rr][Rr][Oo][Rr]/i\\'`
+  - Updated WebSocket handler to accept and process filter parameters
+
+- **Frontend Changes (`templates/index.html`)**:
+  - Added "Log filter" dropdown with three options: All, Errors, Pretty format
+  - Updated `viewLogFile()` function to send filter parameter to backend
+  - Enhanced UI to display filter information in headers and command output
+  - Updated pop-out window to show filter information in title and headers
+
+**Code Changes**:
+```python
+# Backend - Enhanced log filtering
+def get_log_file_tail(self, log_file_path, lines=250, log_filter='all'):
+    if log_filter == 'all':
+        command = f"tail -n {lines} \"{log_file_path}\""
+    elif log_filter == 'errors':
+        command = f"tail -n {lines} \"{log_file_path}\" | grep -i error | sed 's/^/  /'"
+    elif log_filter == 'pretty':
+        command = f"tail -n {lines} \"{log_file_path}\" | sed '/[Ee][Rr][Rr][Oo][Rr]/i\\\\'"
+```
+
+```html
+<!-- Frontend - Log filter dropdown -->
+<div class="form-group">
+    <label for="log-filter">Log filter:</label>
+    <select id="log-filter">
+        <option value="all">All</option>
+        <option value="errors">Errors</option>
+        <option value="pretty">Pretty format</option>
+    </select>
+</div>
+```
+
+## Complete Feature Set After All Enhancements
+
+### **Server Connection Section**:
+- Server IP: 10.73.21.106 (default)
+- Username: admin (default)
+- Password: versa123 (default) ← *Simplified from "SSH Password"*
+- Admin Password: *Hidden and auto-synchronized*
+
+### **System Logs Section**:
+- Log File Selection: Dropdown with organized directory structure
+- Number of Lines: 100, 250, 500, 1000 options
+- **Log Filter**: All, Errors, Pretty format ← *New VMS-Tool-Web style filtering*
+- View Log Content: Enhanced with filtering capabilities
+
+### **Log Display Features**:
+- **All Filter**: Shows complete log content as-is
+- **Errors Filter**: Shows only ERROR lines with indentation for clarity
+- **Pretty Filter**: Shows all content but highlights errors with spacing
+- Filter information displayed in headers and pop-out windows
+- Command execution shown with actual filtering commands used
+
+## Technical Implementation Benefits
+
+1. **VMS-Tool-Web Parity**: Matching functionality across applications
+2. **Flexible Analysis**: Multiple ways to view and analyze log content
+3. **Error Focus**: Quick identification of problems with dedicated error filtering
+4. **Enhanced Readability**: Pretty format makes error scanning easier
+5. **Command Transparency**: Users see exactly what commands are executed
+6. **Consistent UX**: Filter information displayed throughout the interface
+
 ---
 
 **Enhancement Completion Date**: October 25, 2025  
-**Status**: ✅ Successfully Implemented and Deployed (Phase 1 & 2)  
-**Latest Commit**: fb717b3 (UI enhancements for improved user experience)  
+**Status**: ✅ Successfully Implemented and Deployed (Phase 1, 2 & 3)  
+**Latest Commit**: 94ced61 (Advanced log viewing options similar to VMS-Tool-Web)  
 **Tested By**: GitHub Copilot Automated Testing  
 **Approved By**: Development Team
