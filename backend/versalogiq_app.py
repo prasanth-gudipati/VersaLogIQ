@@ -264,12 +264,13 @@ Note: Each new session and operation is marked with decorative separators
                 'technical_error': str(error)
             }
     
-    def connect_to_server(self, host, username, ssh_password, admin_password):
+    def connect_to_server(self, host, username, ssh_password, admin_password=None):
         """Connect to the SSH server in a separate thread"""
         self.host = host
         self.username = username
         self.ssh_password = ssh_password
-        self.admin_password = admin_password
+        # Automatically assign admin password same as SSH password if not provided
+        self.admin_password = admin_password if admin_password else ssh_password
         
         # Start new session in log file
         self.start_new_session_log()
@@ -610,9 +611,10 @@ def handle_ssh_connect(data):
     host = data.get('host', '')
     username = data.get('username', '')
     ssh_password = data.get('ssh_password', '')
-    admin_password = data.get('admin_password', '')
+    # Admin password is now automatically set to SSH password
+    admin_password = ssh_password  # Use SSH password as admin password
     
-    if not all([host, username, ssh_password, admin_password]):
+    if not all([host, username, ssh_password]):
         emit('connection_status', {'connected': False, 'message': 'Missing connection parameters'})
         return
     

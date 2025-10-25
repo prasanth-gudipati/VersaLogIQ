@@ -633,7 +633,7 @@
                 <h3>Server Connection</h3>
                 <div class="form-group-inline">
                     <label for="host">Server IP:</label>
-                    <input type="text" id="host" value="192.168.1.100">
+                    <input type="text" id="host" value="10.73.21.106">
                 </div>
                 <div class="form-group-inline">
                     <label for="username">Username:</label>
@@ -641,12 +641,10 @@
                 </div>
                 <div class="form-group-inline">
                     <label for="ssh_password">SSH Password:</label>
-                    <input type="password" id="ssh_password" value="">
+                    <input type="password" id="ssh_password" value="versa123">
                 </div>
-                <div class="form-group-inline">
-                    <label for="admin_password">Admin Password:</label>
-                    <input type="password" id="admin_password" value="">
-                </div>
+                <!-- Admin password field is hidden - automatically uses SSH password -->
+                <input type="hidden" id="admin_password" value="">
                 <button id="connect-btn" class="btn-primary" onclick="connect()">Connect</button>
                 <button id="disconnect-btn" class="btn-danger" onclick="disconnect()" disabled>Disconnect</button>
                 <div id="status" class="status disconnected">Status: Not Connected</div>
@@ -1017,9 +1015,9 @@ Technical Error: ${details.technical_error}`;
             const host = document.getElementById('host').value;
             const username = document.getElementById('username').value;
             const ssh_password = document.getElementById('ssh_password').value;
-            const admin_password = document.getElementById('admin_password').value;
+            // Admin password is no longer required from UI - automatically set to SSH password
 
-            if (!host || !username || !ssh_password || !admin_password) {
+            if (!host || !username || !ssh_password) {
                 alert('Please fill in all connection fields');
                 return;
             }
@@ -1030,8 +1028,8 @@ Technical Error: ${details.technical_error}`;
             socket.emit('ssh_connect', {
                 host: host,
                 username: username,
-                ssh_password: ssh_password,
-                admin_password: admin_password
+                ssh_password: ssh_password
+                // admin_password removed - backend will use ssh_password automatically
             });
         }
 

@@ -1,0 +1,81 @@
+# Docker ignore file for VersaLogIQ
+# Ignore Git files
+.git
+.gitignore
+
+# Ignore Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+.tox
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# Ignore virtual environment
+venv/
+env/
+ENV/
+.venv/
+.ENV/
+
+# Ignore IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Ignore OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Ignore documentation build files
+docs/_build/
+*.egg-info/
+dist/
+build/
+
+# Ignore application logs (will be handled by volumes)
+backend/logs/*.log
+backend/logs/*.json
+
+# Ignore temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# Ignore local configuration files
+*.local
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Ignore node_modules if any
+node_modules/
+
+# Ignore SSL certificates (if any)
+*.key
+*.crt
+*.pem
+
+# Ignore test results
+test-results/
+*.xml
