@@ -1,0 +1,53 @@
+{
+    "hosts": [
+        {
+            "name": "tb2-278-sdwan-branch3",
+            "flavour": "VOS",
+            "hostname": "10.73.21.106",
+            "user": "admin",
+            "password": "versa123"
+        },
+        {
+            "name": "tb2-278-sdwan-versa-analytics",
+            "flavour": "VAN",
+            "hostname": "10.73.21.117",
+            "user": "admin",
+            "password": "QATest@98Bed"
+        },
+        {
+            "name": "scim99",
+            "flavour": "SCIM",
+            "hostname": "172.20.2.30",
+            "user": "versa",
+            "password": "THS!5V3r5@vmsP@55"
+        },
+        {
+            "name": "vms1163",
+            "flavour": "VMS",
+            "hostname": "10.70.188.171",
+            "user": "admin",
+            "password": "THS!5V3r5@vmsP@55"
+        },
+        {
+            "name": "vms3-scl1",
+            "flavour": "VMS",
+            "hostname": "10.73.70.25",
+            "user": "admin",
+            "password": "THS!5V3r5@vmsP@55"
+        },
+        {
+            "name": "ecp1a-sys",
+            "flavour": "ECP",
+            "hostname": "10.73.70.72",
+            "user": "admin",
+            "password": "QATest@98Bed"
+        },
+        {
+            "name": "ecp2a-scl",
+            "flavour": "ECP",
+            "hostname": "10.73.70.70",
+            "user": "admin",
+            "password": "Versa@123"
+        }
+    ]
+}

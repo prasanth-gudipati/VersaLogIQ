@@ -68,6 +68,34 @@
             background-color: #fafafa;
         }
 
+        /* Alternating background colors for sections - every odd section (1st, 3rd, 5th, etc.) */
+        .section:nth-child(odd) {
+            background-color: #0095DA;
+            color: white;
+        }
+
+        /* Ensure text visibility in alternate sections */
+        .section:nth-child(odd) h3 {
+            color: white;
+            border-bottom-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .section:nth-child(odd) label {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .section:nth-child(odd) .status.connected {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .section:nth-child(odd) .status.disconnected {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.9);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
         .section h3 {
             margin: 0 0 15px 0;
             color: #333;

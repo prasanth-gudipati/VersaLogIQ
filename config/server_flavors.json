@@ -1,0 +1,212 @@
+{
+    "version": "1.1",
+    "detection_config": {
+        "timeout_seconds": 30,
+        "max_retries": 2,
+        "default_flavor": "Unknown"
+    },
+    "server_flavors": {
+        "vms": {
+            "name": "VMS",
+            "description": "Versa Messaging Server",
+            "icon": "🎛️",
+            "color": "blue",
+            "log_directories": [
+                "/var/logs/versa",
+                "/var/log"
+            ],
+            "detection_rules": [
+                {
+                    "command": "vsh status | grep msgservice",
+                    "use_sudo": true,
+                    "required_patterns": [
+                        "msgservice"
+                    ],
+                    "pattern_match_type": "contains",
+                    "case_sensitive": false,
+                    "timeout": 15,
+                    "priority": 110,
+                    "description": "Check for msgservice in vsh status output"
+                }
+            ]
+        },
+        "vos": {
+            "name": "VOS",
+            "description": "Versa Operating System",
+            "icon": "🔧",
+            "color": "cyan",
+            "log_directories": [
+                "/var/logs/versa",
+                "/var/log"
+            ],
+            "detection_rules": [
+                {
+                    "command": "vsh details",
+                    "use_sudo": false,
+                    "required_patterns": [
+                        "versa-flexvnf"
+                    ],
+                    "pattern_match_type": "contains",
+                    "case_sensitive": false,
+                    "timeout": 15,
+                    "priority": 100,
+                    "description": "Check for versa-flexvnf in vsh details output"
+                },
+                {
+                    "command": "cat /etc/versa-release",
+                    "use_sudo": false,
+                    "required_patterns": [
+                        "versa"
+                    ],
+                    "pattern_match_type": "contains",
+                    "case_sensitive": false,
+                    "timeout": 10,
+                    "priority": 95,
+                    "description": "Check Versa release file"
+                }
+            ],
+            "fallback_commands": [
+                {
+                    "command": "vsh show version",
+                    "use_sudo": false,
+                    "required_patterns": [
+                        "versa",
+                        "flexvnf"
+                    ],
+                    "pattern_match_type": "contains",
+                    "case_sensitive": false,
+                    "timeout": 15,
+                    "priority": 80,
+                    "description": "Check Versa version information"
+                },
+                {
+                    "command": "ps aux | grep versa",
+                    "use_sudo": false,
+                    "required_patterns": [
+                        "versa"
+                    ],
+                    "pattern_match_type": "contains",
+                    "case_sensitive": false,
+                    "timeout": 10,
+                    "priority": 70,
+                    "description": "Check for Versa processes"
+                }
+            ]
+        },
+        "scim": {
+            "name": "SCIM",
+            "description": "SCIM",
+            "icon": "🎛️",
+            "color": "blue",
+            "log_directories": [
+                "/var/log"
+            ],
+            "detection_rules": [
+                {
+                    "command": "docker ps |grep -i versa_scim",
+                    "use_sudo": false,
+                    "required_patterns": [
+                        "versa_scim"
+                    ],
+                    "pattern_match_type": "contains",
+                    "case_sensitive": false,
+                    "timeout": 15,
+                    "priority": 110,
+                    "description": "Check for versa_scim container in Docker"
+                }
+            ]
+        },
+        "ECP": {
+            "name": "ECP",
+            "description": "ECP",
+            "icon": "🎛️",
+            "color": "blue",
+            "log_directories": [
+                "/var/log/ecp"
+            ],
+            "detection_rules": [
+                {
+                    "command": "vsh system details | grep concerto",
+                    "use_sudo": true,
+                    "required_patterns": [
+                        "concerto"
+                    ],
+                    "pattern_match_type": "contains",
+                    "case_sensitive": false,
+                    "timeout": 15,
+                    "priority": 110,
+                    "description": "Check for concerto in vsh system details output"
+                }
+            ]
+        },
+        "VAN": {
+            "name": "VAN",
+            "description": "VAN",
+            "icon": "🎛️",
+            "color": "blue",
+            "log_directories": [
+                "/var/log/ecp"
+            ],
+            "detection_rules": [
+                {
+                    "command": "vsh details | grep versa-analytics",
+                    "use_sudo": false,
+                    "required_patterns": [
+                        "versa-analytics"
+                    ],
+                    "pattern_match_type": "contains",
+                    "case_sensitive": false,
+                    "timeout": 15,
+                    "priority": 110,
+                    "description": "Check for versa-analytics in vsh details output"
+                }
+            ]
+        },
+        "ubuntu": {
+            "name": "Ubuntu Linux",
+            "description": "Ubuntu operating system",
+            "icon": "🐧",
+            "color": "orange",
+            "log_directories": [
+                "/var/logs/versa",
+                "/var/log"
+            ],
+            "detection_rules": [
+                {
+                    "command": "lsb_release -d",
+                    "use_sudo": false,
+                    "required_patterns": [
+                        "ubuntu"
+                    ],
+                    "pattern_match_type": "contains",
+                    "case_sensitive": false,
+                    "timeout": 10,
+                    "priority": 90,
+                    "description": "Check LSB release information"
+                },
+                {
+                    "command": "cat /etc/os-release",
+                    "use_sudo": false,
+                    "required_patterns": [
+                        "ubuntu"
+                    ],
+                    "pattern_match_type": "contains",
+                    "case_sensitive": false,
+                    "timeout": 5,
+                    "priority": 85,
+                    "description": "Check OS release file"
+                }
+            ]
+        },
+        "unknown": {
+            "name": "Unknown",
+            "description": "Unknown or undetected server type",
+            "icon": "❓",
+            "color": "gray",
+            "log_directories": [
+                "/var/logs/versa",
+                "/var/log"
+            ]
+        }
+    }
+}
