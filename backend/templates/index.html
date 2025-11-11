@@ -676,6 +676,7 @@
                 <button id="connect-btn" class="btn-primary" onclick="connect()">Connect</button>
                 <button id="disconnect-btn" class="btn-danger" onclick="disconnect()" disabled>Disconnect</button>
                 <div id="status" class="status disconnected">Status: Not Connected</div>
+                <div id="flavor-status" class="status disconnected" style="display:none;">Server Flavor: Unknown</div>
             </div>
 
             <div class="section" id="operations-section" style="display:none;">
@@ -762,6 +763,45 @@
             output.scrollTop = output.scrollHeight;
         });
 
+        socket.on('flavor_detected', function (data) {
+            const flavorStatus = document.getElementById('flavor-status');
+            if (flavorStatus) {
+                flavorStatus.textContent = `Server Flavor: ${data.flavor}`;
+                flavorStatus.className = 'status connected';
+                flavorStatus.style.display = 'block';
+
+                // Add flavor detection message to the output
+                const output = document.getElementById('output');
+                const line = document.createElement('div');
+                line.className = 'output-line success';
+                const timestamp = new Date().toLocaleTimeString();
+                const flavorIcon = getFlavorIcon(data.flavor);
+                line.innerHTML = `<span class="timestamp">[${timestamp}]</span> ${flavorIcon} Server Flavor Detected: <strong>${data.flavor}</strong>`;
+                output.appendChild(line);
+                output.scrollTop = output.scrollHeight;
+            }
+        });
+
+        socket.on('flavor_detection_complete', function (data) {
+            // Show operations section after flavor detection is completed
+            document.getElementById('operations-section').style.display = 'block';
+
+            // Enable scan logs button
+            const scanLogsBtn = document.getElementById('scan-logs-btn');
+            if (scanLogsBtn) {
+                scanLogsBtn.disabled = false;
+            }
+
+            // Add message to indicate operations are now available
+            const output = document.getElementById('output');
+            const line = document.createElement('div');
+            line.className = 'output-line success';
+            const timestamp = new Date().toLocaleTimeString();
+            line.innerHTML = `<span class="timestamp">[${timestamp}]</span> 🛠️ Log Operations are now available. You can scan system logs.`;
+            output.appendChild(line);
+            output.scrollTop = output.scrollHeight;
+        });
+
         socket.on('connection_status', function (data) {
             connected = data.connected;
             const status = document.getElementById('status');
@@ -777,11 +817,11 @@
                 connectBtn.disabled = true;
                 disconnectBtn.disabled = false;
 
-                // Show operations section immediately after connection
-                document.getElementById('operations-section').style.display = 'block';
+                // Don't show operations section immediately - wait for flavor detection to complete
+                // document.getElementById('operations-section').style.display = 'block';
 
-                // Enable scan logs button
-                scanLogsBtn.disabled = false;
+                // Don't enable scan logs button yet - wait for flavor detection to complete
+                // scanLogsBtn.disabled = false;
 
                 // Disable input fields when connected
                 inputs.forEach(input => input.disabled = true);
@@ -791,7 +831,7 @@
                 const line = document.createElement('div');
                 line.className = 'output-line success';
                 const timestamp = new Date().toLocaleTimeString();
-                line.innerHTML = `<span class="timestamp">[${timestamp}]</span> ✓ Connected successfully! Log scanning will start automatically...`;
+                line.innerHTML = `<span class="timestamp">[${timestamp}]</span> ✓ Connected successfully! Flavor detection will start automatically...`;
                 output.appendChild(line);
                 output.scrollTop = output.scrollHeight;
 
@@ -800,6 +840,14 @@
                 status.className = 'status disconnected';
                 connectBtn.disabled = false;
                 disconnectBtn.disabled = true;
+
+                // Hide flavor status when disconnected
+                const flavorStatus = document.getElementById('flavor-status');
+                if (flavorStatus) {
+                    flavorStatus.style.display = 'none';
+                    flavorStatus.textContent = 'Server Flavor: Unknown';
+                    flavorStatus.className = 'status disconnected';
+                }
 
                 // Show detailed error popup if error details are provided
                 if (data.error_details) {
@@ -1337,6 +1385,20 @@ Technical Error: ${details.technical_error}`;
             document.getElementById('output').style.display = 'block';
             document.getElementById('log-content').style.display = 'none';
             document.getElementById('panel-title').textContent = 'Command Execution Output';
+        }
+
+        function getFlavorIcon(flavor) {
+            // Return appropriate icon for each server flavor
+            const flavorIcons = {
+                'VMS': '🎛️',
+                'VOS': '🔧',
+                'SCIM': '🎛️',
+                'ECP': '🎛️',
+                'VAN': '🎛️',
+                'Ubuntu Linux': '🐧',
+                'Unknown': '❓'
+            };
+            return flavorIcons[flavor] || '❓';
         }
     </script>
 </body>

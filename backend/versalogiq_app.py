@@ -38,6 +38,7 @@ import re
 from datetime import datetime
 import os
 import redis
+from typing import Dict, List, Tuple
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'versalogiq-secret-key'
@@ -59,6 +60,10 @@ class VersaLogIQ:
         self.ssh_password = ""
         self.admin_password = ""
         
+        # Server flavor detection
+        self.detected_flavor = "Unknown"
+        self.flavour_configs = {}
+        
         # Queue for thread communication
         self.output_queue = queue.Queue()
         
@@ -71,6 +76,9 @@ class VersaLogIQ:
         
         # Initialize log file if it doesn't exist
         self._initialize_log_file()
+        
+        # Load flavor configurations
+        self._load_flavour_configs()
     
     def _ensure_logs_directory(self):
         """Create Logs directory if it doesn't exist"""
@@ -162,6 +170,359 @@ Note: Each new session and operation is marked with decorative separators
                     
         except Exception as e:
             print(f"Warning: Could not initialize log file: {str(e)}")
+    
+    def _load_flavour_configs(self) -> bool:
+        """Load server flavour detection configurations"""
+        flavour_config_file = "config/server_flavors.json"
+        try:
+            if not os.path.exists(flavour_config_file):
+                print(f"⚠️  Flavour config file not found: {flavour_config_file}")
+                print("📝 Flavour detection will be skipped")
+                return False
+                
+            with open(flavour_config_file, 'r') as f:
+                flavour_data = json.load(f)
+                
+            self.flavour_configs = flavour_data.get('server_flavors', {})
+            print(f"✅ Loaded {len(self.flavour_configs)} flavour detection configurations")
+            return True
+            
+        except json.JSONDecodeError as e:
+            print(f"❌ Invalid JSON format in flavour config: {str(e)}")
+            return False
+        except Exception as e:
+            print(f"❌ Error loading flavour config: {str(e)}")
+            return False
+    
+    def execute_ssh_command(self, command: str, timeout: int = 15, use_sudo: bool = False) -> Tuple[str, str]:
+        """Execute a command via SSH and return stdout, stderr"""
+        if not self.ssh_client:
+            return "", "No SSH connection available"
+            
+        try:
+            original_command = command
+            if use_sudo:
+                # Check if this is a VMS-specific command that needs root shell
+                if command.strip().startswith('vsh status') and 'msgservice' in command:
+                    self.log_output(f"🔐 Executing VMS command with sudo shell: {command}", "info")
+                    return self._execute_with_sudo_shell(command, timeout)
+                else:
+                    self.log_output(f"🔐 Executing with sudo prefix: {command}", "info")
+                    return self._execute_with_sudo_prefix(command, timeout)
+            else:
+                self.log_output(f"🔓 Executing without sudo: {command}", "info")
+            
+            # Add a small delay to allow shell to stabilize
+            time.sleep(0.5)
+            
+            # For VOS commands (vsh), try to source the environment first
+            if original_command.strip().startswith('vsh'):
+                # Try multiple approaches for VOS commands
+                vos_commands = [
+                    command,  # Try as specified
+                    f"source /etc/profile && {command}",  # Try with profile
+                    f"export PATH=/opt/versa/bin:$PATH && {command}",  # Try with VOS path
+                    f"/opt/versa/bin/{original_command}"  # Try with full path
+                ]
+                
+                for vos_cmd in vos_commands:
+                    stdin, stdout, stderr = self.ssh_client.exec_command(vos_cmd, timeout=timeout)
+                    time.sleep(1.0)
+                    
+                    stdout_data = stdout.read().decode('utf-8', errors='ignore').strip()
+                    stderr_data = stderr.read().decode('utf-8', errors='ignore').strip()
+                    
+                    # If we got output or no "command not found" error, use this result
+                    if stdout_data or ("command not found" not in stderr_data and "No such file" not in stderr_data):
+                        return stdout_data, stderr_data
+                
+                # If all VOS commands failed, return the last result
+                return stdout_data, stderr_data
+            else:
+                stdin, stdout, stderr = self.ssh_client.exec_command(command, timeout=timeout)
+                time.sleep(1.0)
+                
+                stdout_data = stdout.read().decode('utf-8', errors='ignore').strip()
+                stderr_data = stderr.read().decode('utf-8', errors='ignore').strip()
+                
+                return stdout_data, stderr_data
+            
+        except Exception as e:
+            return "", str(e)
+    
+    def _execute_with_sudo_shell(self, command: str, timeout: int = 15) -> Tuple[str, str]:
+        """Execute a command using interactive shell with sudo su (similar to versalogiq_app.py)"""
+        try:
+            # Create interactive shell
+            shell = self.ssh_client.invoke_shell()
+            time.sleep(1)
+            shell.recv(10000)  # Clear banner
+            
+            # Execute sudo su
+            shell.send("sudo su\n")
+            
+            # Wait for password prompt
+            buff = ""
+            start_time = time.time()
+            while time.time() - start_time < 10:  # 10 second timeout
+                if shell.recv_ready():
+                    resp = shell.recv(1000).decode('utf-8', errors='ignore')
+                    buff += resp
+                    if "password for" in buff.lower():
+                        break
+                time.sleep(0.2)
+            
+            if "password for" not in buff.lower():
+                shell.close()
+                return "", "Sudo password prompt not found"
+            
+            # Send password (use admin password)
+            shell.send(self.admin_password + "\n")
+            time.sleep(1.5)
+            
+            # Check if sudo was successful
+            output = shell.recv(10000).decode('utf-8', errors='ignore')
+            
+            # Now execute the actual command
+            shell.send(f"{command}\n")
+            time.sleep(2)
+            
+            # Collect output
+            command_output = ""
+            start_time = time.time()
+            
+            while time.time() - start_time < timeout:
+                if shell.recv_ready():
+                    chunk = shell.recv(4096).decode('utf-8', errors='ignore')
+                    command_output += chunk
+                    if chunk.endswith('# ') or chunk.endswith('$ '):
+                        break
+                time.sleep(0.1)
+            
+            # Clean up
+            shell.send("exit\n")
+            time.sleep(0.5)
+            shell.close()
+            
+            # Clean the output - remove ANSI codes and command echoes
+            ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+            cleaned_output = ansi_escape.sub('', command_output)
+            
+            # Remove command echo and prompts
+            lines = cleaned_output.strip().split('\n')
+            result_lines = []
+            for line in lines:
+                line = line.strip()
+                # Skip command echo, prompts, and empty lines  
+                if (not line or 
+                    line.startswith(command) or
+                    line.endswith('# ') or 
+                    line.endswith('$ ') or
+                    line.startswith('[root@')):
+                    continue
+                result_lines.append(line)
+            
+            result_output = '\n'.join(result_lines)
+            return result_output, ""
+            
+        except Exception as e:
+            return "", f"Sudo shell execution failed: {str(e)}"
+    
+    def _execute_with_sudo_prefix(self, command: str, timeout: int = 15) -> Tuple[str, str]:
+        """Execute a command using sudo prefix with interactive shell (for ECP and similar systems)"""
+        try:
+            self.log_output(f"🔍 Using interactive shell approach for: {command}", "info")
+            
+            password = self.admin_password
+            
+            # Create interactive shell (like the manual test)
+            shell = self.ssh_client.invoke_shell()
+            time.sleep(1)
+            
+            # Clear any initial output/banner
+            if shell.recv_ready():
+                shell.recv(10000)
+            
+            # Send the command directly (it will prompt for sudo password)
+            shell.send(f"{command}\n")
+            
+            # Wait for sudo password prompt
+            output_buffer = ""
+            start_time = time.time()
+            while time.time() - start_time < 10:  # 10 second timeout
+                if shell.recv_ready():
+                    chunk = shell.recv(1000).decode('utf-8', errors='ignore')
+                    output_buffer += chunk
+                    # Check if we got the sudo password prompt
+                    if "[sudo] password for" in output_buffer:
+                        break
+                time.sleep(0.2)
+            
+            if "[sudo] password for" not in output_buffer:
+                shell.close()
+                return "", "No sudo password prompt found"
+            
+            # Send the password
+            shell.send(password + "\n")
+            time.sleep(3)  # Wait for command to execute
+            
+            # Collect the output
+            final_output = ""
+            start_time = time.time()
+            while time.time() - start_time < 5:  # 5 second timeout for output
+                if shell.recv_ready():
+                    chunk = shell.recv(4096).decode('utf-8', errors='ignore')
+                    final_output += chunk
+                else:
+                    break
+                time.sleep(0.1)
+            
+            shell.close()
+            
+            self.log_output(f"📊 Raw interactive output: '{final_output}'", "info")
+            
+            # Clean the output - remove ANSI codes, command echoes, and prompts
+            ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+            cleaned_output = ansi_escape.sub('', final_output)
+            
+            # Split into lines and filter
+            lines = cleaned_output.split('\n')
+            result_lines = []
+            
+            for line in lines:
+                line = line.strip()
+                # Skip empty lines, command echoes, prompts, and sudo messages
+                if (not line or 
+                    line == command or  # Skip command echo
+                    "[sudo] password for" in line or
+                    line == password or  # Skip password echo
+                    line.endswith('$ ') or
+                    line.endswith('# ') or
+                    line.startswith('admin@') or  # Skip shell prompts
+                    line.startswith('$') or
+                    line.startswith('#')):
+                    continue
+                
+                # Keep lines that look like actual output
+                if line:
+                    result_lines.append(line)
+            
+            result_output = '\n'.join(result_lines)
+            
+            self.log_output(f"📋 Final cleaned output: '{result_output}'", "info")
+            
+            return result_output, ""
+            
+        except Exception as e:
+            self.log_output(f"❌ Interactive shell execution failed: {str(e)}", "error")
+            return "", f"Interactive sudo execution failed: {str(e)}"
+
+    def detect_server_flavour(self) -> str:
+        """Detect the actual server flavour using detection rules"""
+        if not self.flavour_configs:
+            self.log_output("⚠️  No flavour configuration available - detection skipped", "info")
+            return "Unknown"
+        
+        self.log_output(f"🔍 Detecting server flavour for {self.host}...", "info")
+        
+        # Sort flavours by priority (highest first)
+        flavour_items = []
+        for flavour_key, flavour_config in self.flavour_configs.items():
+            if flavour_key == 'unknown':  # Skip unknown as it's the fallback
+                continue
+                
+            detection_rules = flavour_config.get('detection_rules', [])
+            fallback_commands = flavour_config.get('fallback_commands', [])
+            
+            # Add primary detection rules
+            for rule in detection_rules:
+                rule['flavour_key'] = flavour_key
+                rule['flavour_name'] = flavour_config.get('name', flavour_key)
+                rule['flavour_icon'] = flavour_config.get('icon', '❓')
+                flavour_items.append(rule)
+            
+            # Add fallback commands
+            for rule in fallback_commands:
+                rule['flavour_key'] = flavour_key
+                rule['flavour_name'] = flavour_config.get('name', flavour_key)
+                rule['flavour_icon'] = flavour_config.get('icon', '❓')
+                flavour_items.append(rule)
+        
+        # Sort by priority (highest first)
+        flavour_items.sort(key=lambda x: x.get('priority', 0), reverse=True)
+        
+        # Test each detection rule until we find a match
+        for rule in flavour_items:
+            try:
+                command = rule.get('command', '')
+                use_sudo = rule.get('use_sudo', False)
+                required_patterns = rule.get('required_patterns', [])
+                pattern_match_type = rule.get('pattern_match_type', 'contains')
+                case_sensitive = rule.get('case_sensitive', False)
+                timeout = rule.get('timeout', 15)
+                flavour_name = rule['flavour_name']
+                flavour_icon = rule['flavour_icon']
+                priority = rule.get('priority', 0)
+                
+                self.log_output(f"🧪 Testing {flavour_name} (Priority: {priority}) - Command: {command}", "info")
+                self.log_output(f"🔧 Use sudo: {use_sudo}", "info")
+                
+                stdout, stderr = self.execute_ssh_command(command, timeout, use_sudo)
+                
+                # Debug output for VOS detection
+                if 'vsh' in command.lower():
+                    self.log_output(f"📝 Command output length: {len(stdout)} chars", "info")
+                    if stdout:
+                        self.log_output(f"📝 First 200 chars: {stdout[:200]}...", "info")
+                    if stderr:
+                        self.log_output(f"⚠️  Error output: {stderr[:200]}...", "info")
+                
+                # Check if all required patterns are found
+                if self._check_patterns(stdout, required_patterns, pattern_match_type, case_sensitive):
+                    self.log_output(f"✅ Server flavour detected: {flavour_icon} {flavour_name}", "success")
+                    return flavour_name
+                elif stdout or stderr:
+                    self.log_output(f"❌ Pattern not found for {flavour_name}", "info")
+                    # Debug output for pattern matching
+                    if 'vsh' in command.lower() and required_patterns:
+                        self.log_output(f"🔍 Looking for patterns: {required_patterns}", "info")
+                        for pattern in required_patterns:
+                            search_text = stdout if case_sensitive else stdout.lower()
+                            search_pattern = pattern if case_sensitive else pattern.lower()
+                            found = search_pattern in search_text
+                            self.log_output(f"🔍 Pattern '{pattern}' {'✅ FOUND' if found else '❌ NOT FOUND'}", "info")
+                else:
+                    self.log_output(f"⚠️  No output from command for {flavour_name}", "info")
+                    
+            except Exception as e:
+                self.log_output(f"❌ Error testing {rule.get('flavour_name', 'unknown')}: {str(e)}", "error")
+                continue
+        
+        self.log_output(f"❓ No flavour detected, defaulting to Unknown", "info")
+        return "Unknown"
+    
+    def _check_patterns(self, text: str, patterns: List[str], match_type: str = 'contains', case_sensitive: bool = False) -> bool:
+        """Check if all required patterns are found in the text"""
+        if not patterns:
+            return False
+            
+        search_text = text if case_sensitive else text.lower()
+        
+        for pattern in patterns:
+            search_pattern = pattern if case_sensitive else pattern.lower()
+            
+            if match_type == 'contains':
+                if search_pattern not in search_text:
+                    return False
+            elif match_type == 'regex':
+                flags = 0 if case_sensitive else re.IGNORECASE
+                if not re.search(search_pattern, text, flags):
+                    return False
+            elif match_type == 'exact':
+                if search_pattern != search_text:
+                    return False
+        
+        return True
     
     def _analyze_connection_error(self, error, host, username):
         """Analyze connection error and provide user-friendly error details"""
@@ -304,27 +665,56 @@ Note: Each new session and operation is marked with decorative separators
             self.log_output("Executing 'sudo su' command...", "command")
             self.shell.send("sudo su\n")
             
-            # Wait for password prompt
+            # Wait for password prompt OR immediate root shell
             buff = ""
             start_time = time.time()
+            password_required = False
+            
+            self.log_output("Waiting for sudo response...", "info")
+            
             while time.time() - start_time < 10:  # 10 second timeout
                 if self.shell.recv_ready():
                     resp = self.shell.recv(1000).decode('utf-8', errors='ignore')
                     buff += resp
-                    if "password for" in buff.lower():
+                    self.log_output(f"Debug - Received chunk: '{resp.strip()}'", "info")
+                    
+                    # Check for password prompt (multiple variations)
+                    if ("password for" in buff.lower() or 
+                        "password:" in buff.lower() or
+                        "[sudo] password" in buff.lower()):
+                        password_required = True
+                        self.log_output("Password prompt detected", "info")
                         break
+                    
+                    # Check for immediate root shell (passwordless sudo)
+                    if ("root@" in buff or 
+                        buff.strip().endswith("# ") or
+                        "# " in buff):
+                        self.log_output("Passwordless sudo detected - no password required", "success")
+                        break
+                        
                 time.sleep(0.2)
             
-            if "password for" not in buff.lower():
-                raise Exception("Sudo password prompt not found")
-            
-            # Send admin password
-            self.shell.send(admin_password + "\n")
-            time.sleep(1.5)
-            
-            # Check if sudo was successful
-            output = self.shell.recv(10000).decode('utf-8', errors='ignore')
-            self.log_output("Sudo elevation successful", "success")
+            # Handle password requirement
+            if password_required:
+                self.log_output("Sudo password required - sending password", "info")
+                # Send admin password
+                self.shell.send(admin_password + "\n")
+                time.sleep(1.5)
+                
+                # Check if sudo was successful
+                output = self.shell.recv(10000).decode('utf-8', errors='ignore')
+                self.log_output("Sudo elevation successful (with password)", "success")
+            elif ("root@" in buff or 
+                  buff.strip().endswith("# ") or
+                  "# " in buff):
+                self.log_output("Sudo elevation successful (passwordless)", "success")
+            else:
+                # Log the actual buffer content for debugging
+                self.log_output(f"Debug - Final buffer: '{buff.strip()}'", "info")
+                self.log_output(f"Debug - Buffer length: {len(buff)}", "info")
+                self.log_output(f"Debug - Looking for: 'password for' or 'root@' or '# '", "info")
+                raise Exception("Sudo command failed - neither password prompt nor root shell detected")
             
             # Update connection state
             self.connected = True
@@ -333,7 +723,28 @@ Note: Each new session and operation is marked with decorative separators
             else:
                 socketio.emit('connection_status', {'connected': True, 'message': 'Connected successfully'})
             
-            # Automatically start log scanning after successful connection
+            # Detect server flavor after successful connection
+            self.log_output("", "normal")  # Empty line for separation
+            self.log_output("=" * 60, "info")
+            self.log_output("🔍 STARTING SERVER FLAVOR DETECTION", "info")
+            self.log_output("=" * 60, "info")
+            self.detected_flavor = self.detect_server_flavour()
+            self.log_output("=" * 60, "success")
+            self.log_output("✅ FLAVOR DETECTION COMPLETED", "success")
+            self.log_output("=" * 60, "success")
+            self.log_output("", "normal")  # Empty line for separation
+            
+            # Send flavor information to the frontend
+            if self.session_id:
+                socketio.emit('flavor_detected', {'flavor': self.detected_flavor}, room=self.session_id)
+                # Signal that flavor detection is complete and operations section should be shown
+                socketio.emit('flavor_detection_complete', {}, room=self.session_id)
+            else:
+                socketio.emit('flavor_detected', {'flavor': self.detected_flavor})
+                # Signal that flavor detection is complete and operations section should be shown
+                socketio.emit('flavor_detection_complete', {})
+            
+            # Automatically start log scanning after flavor detection
             self.log_output("Connection successful! Starting log file scanning...", "success")
             time.sleep(1)
             self.scan_system_logs()
@@ -380,6 +791,7 @@ Note: Each new session and operation is marked with decorative separators
         self.connected = False
         self.ssh_client = None
         self.shell = None
+        self.detected_flavor = "Unknown"
         
         self.log_output("Disconnected from server", "info")
         if self.session_id:
@@ -397,10 +809,10 @@ Note: Each new session and operation is marked with decorative separators
         self.start_new_operation_log("System Log Files Scanning")
         
         try:
-            self.log_output("Scanning for log files in /var/log directory", "info")
+            self.log_output("Scanning for log files in /var/log directory (excluding .gz files)", "info")
             
             # Execute find command to get all log files, excluding .gz files
-            command = "find /var/log -type f -name '*.log*' ! -name '*.gz' | sort"
+            command = "find /var/log -type f -name '*.log*' ! -name '*.gz' ! -name '*.gz.*' | sort"
             self.log_output(f"Executing command: {command}", "command")
             self.shell.send(f"{command}\n")
             time.sleep(3)
@@ -423,10 +835,11 @@ Note: Each new session and operation is marked with decorative separators
                     line.startswith('[root@')):
                     continue
                 
-                # Check if it's a valid log file path and exclude .gz files
+                # Check if it's a valid log file path and exclude .gz files (double-check)
                 if (line.startswith('/var/log/') and 
                     ('log' in line.lower()) and 
-                    not line.endswith('.gz')):
+                    not line.endswith('.gz') and
+                    '.gz.' not in line.lower()):
                     # Extract directory and filename
                     path_parts = line.split('/')
                     if len(path_parts) >= 3:  # /var/log/[directory]/[filename] or /var/log/[filename]
@@ -435,6 +848,10 @@ Note: Each new session and operation is marked with decorative separators
                         else:
                             directory = path_parts[3] if len(path_parts) > 3 else 'var-log-root'
                         filename = path_parts[-1]
+                        
+                        # Additional check: skip any filename containing .gz
+                        if '.gz' in filename.lower():
+                            continue
                         
                         if directory not in log_files:
                             log_files[directory] = []
@@ -451,7 +868,7 @@ Note: Each new session and operation is marked with decorative separators
             
             total_files = sum(len(files) for files in log_files.values())
             total_dirs = len(log_files)
-            self.log_output(f"-> Found {total_files} log files across {total_dirs} directories (excluding .gz files)", "success")
+            self.log_output(f"-> Found {total_files} log files across {total_dirs} directories (all .gz files excluded)", "success")
             
             # Log summary for each directory
             for directory, files in log_files.items():
@@ -608,6 +1025,361 @@ def version():
             'Enhanced Update Process'
         ]
     }), 200
+
+@app.route('/api/test_connection', methods=['POST'])
+def api_test_connection():
+    """REST API endpoint to test connection to a specific server"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'error': 'No JSON data provided'}), 400
+        
+        # Extract connection parameters
+        hostname = data.get('hostname')
+        username = data.get('username')
+        password = data.get('password')
+        key_filename = data.get('key_filename')
+        expected_flavor = data.get('expected_flavor')
+        use_mock = data.get('use_mock', False)
+        
+        if not hostname or not username:
+            return jsonify({
+                'success': False, 
+                'error': 'hostname and username are required'
+            }), 400
+        
+        if not password and not key_filename:
+            return jsonify({
+                'success': False,
+                'error': 'Either password or key_filename is required'
+            }), 400
+        
+        # Create a temporary VersaLogIQ instance for testing
+        test_client = VersaLogIQ()
+        
+        start_time = time.time()
+        
+        # Mock response for testing
+        if use_mock:
+            connection_time = time.time() - start_time + 0.5  # Simulate connection time
+            return jsonify({
+                'success': True,
+                'hostname': hostname,
+                'detected_flavor': expected_flavor or 'VMS',
+                'sudo_available': True,
+                'requires_password': False,
+                'connection_time': round(connection_time, 3),
+                'mock': True
+            })
+        
+        # Attempt real connection
+        success = test_client.connect_to_server(hostname, username, password, key_filename)
+        connection_time = time.time() - start_time
+        
+        if not success:
+            return jsonify({
+                'success': False,
+                'hostname': hostname,
+                'error': 'Failed to establish SSH connection',
+                'connection_time': round(connection_time, 3)
+            })
+        
+        # Detect server flavor
+        detected_flavor = test_client.detect_server_flavour()
+        
+        # Test sudo access
+        sudo_info = test_client.test_sudo_access()
+        
+        # Close test connection
+        test_client.ssh_client.close()
+        
+        return jsonify({
+            'success': True,
+            'hostname': hostname,
+            'detected_flavor': detected_flavor,
+            'sudo_available': sudo_info.get('sudo_available', False),
+            'requires_password': sudo_info.get('requires_password', True),
+            'connection_time': round(connection_time, 3)
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'Connection test failed: {str(e)}'
+        }), 500
+
+@app.route('/api/check_all_servers', methods=['POST'])
+def api_check_all_servers():
+    """REST API endpoint to check connectivity to all servers in ssh_hosts.json"""
+    try:
+        data = request.get_json() or {}
+        use_mock = data.get('use_mock', False)
+        
+        # Load servers from ssh_hosts.json
+        ssh_hosts_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'ssh_hosts.json')
+        
+        try:
+            with open(ssh_hosts_file, 'r') as f:
+                hosts_data = json.load(f)
+                servers = hosts_data.get('hosts', [])
+        except FileNotFoundError:
+            return jsonify({
+                'success': False,
+                'error': 'ssh_hosts.json file not found'
+            }), 404
+        except json.JSONDecodeError:
+            return jsonify({
+                'success': False,
+                'error': 'Invalid JSON in ssh_hosts.json'
+            }), 400
+        
+        if not servers:
+            return jsonify({
+                'success': False,
+                'error': 'No servers configured in ssh_hosts.json'
+            }), 400
+        
+        results = []
+        successful = 0
+        failed = 0
+        
+        for server in servers:
+            try:
+                # Mock response for testing
+                if use_mock:
+                    result = {
+                        'hostname': server['hostname'],
+                        'name': server['name'],
+                        'success': True,
+                        'detected_flavor': server['flavour'],
+                        'connection_time': 0.5,
+                        'mock': True
+                    }
+                    successful += 1
+                else:
+                    # Test real connection
+                    test_client = VersaLogIQ()
+                    start_time = time.time()
+                    
+                    success = test_client.connect_to_server(
+                        server['hostname'],
+                        server['user'],
+                        server['password']
+                    )
+                    
+                    connection_time = time.time() - start_time
+                    
+                    if success:
+                        detected_flavor = test_client.detect_server_flavour()
+                        sudo_info = test_client.test_sudo_access()
+                        test_client.ssh_client.close()
+                        
+                        result = {
+                            'hostname': server['hostname'],
+                            'name': server['name'],
+                            'success': True,
+                            'detected_flavor': detected_flavor,
+                            'expected_flavor': server['flavour'],
+                            'flavor_match': detected_flavor == server['flavour'],
+                            'sudo_available': sudo_info.get('sudo_available', False),
+                            'connection_time': round(connection_time, 3)
+                        }
+                        successful += 1
+                    else:
+                        result = {
+                            'hostname': server['hostname'],
+                            'name': server['name'],
+                            'success': False,
+                            'error': 'Connection failed',
+                            'connection_time': round(connection_time, 3)
+                        }
+                        failed += 1
+                
+                results.append(result)
+                
+            except Exception as e:
+                result = {
+                    'hostname': server['hostname'],
+                    'name': server['name'],
+                    'success': False,
+                    'error': str(e)
+                }
+                results.append(result)
+                failed += 1
+        
+        return jsonify({
+            'results': results,
+            'summary': {
+                'total_tested': len(servers),
+                'successful': successful,
+                'failed': failed,
+                'success_rate': round((successful / len(servers)) * 100, 1) if servers else 0
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'Bulk connectivity check failed: {str(e)}'
+        }), 500
+
+@app.route('/api/server_status/<hostname>')
+def api_server_status(hostname):
+    """REST API endpoint to get status of a specific server"""
+    try:
+        # Load servers from ssh_hosts.json
+        ssh_hosts_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'ssh_hosts.json')
+        
+        try:
+            with open(ssh_hosts_file, 'r') as f:
+                hosts_data = json.load(f)
+                servers = hosts_data.get('hosts', [])
+        except FileNotFoundError:
+            return jsonify({'error': 'ssh_hosts.json file not found'}), 404
+        
+        # Find the server
+        server = next((s for s in servers if s['hostname'] == hostname), None)
+        
+        if not server:
+            return jsonify({'error': f'Server {hostname} not found in configuration'}), 404
+        
+        # Quick connectivity test
+        test_client = VersaLogIQ()
+        start_time = time.time()
+        
+        try:
+            success = test_client.connect_to_server(
+                hostname,
+                server['user'],
+                server['password']
+            )
+            
+            connection_time = time.time() - start_time
+            
+            if success:
+                test_client.ssh_client.close()
+                status = 'online'
+                error = None
+            else:
+                status = 'offline'
+                error = 'Connection failed'
+                
+        except Exception as e:
+            connection_time = time.time() - start_time
+            status = 'offline'
+            error = str(e)
+        
+        response = {
+            'hostname': hostname,
+            'name': server['name'],
+            'flavor': server['flavour'],
+            'status': status,
+            'last_check': datetime.now().isoformat(),
+            'response_time': round(connection_time, 3)
+        }
+        
+        if error:
+            response['error'] = error
+            
+        return jsonify(response)
+        
+    except Exception as e:
+        return jsonify({'error': f'Status check failed: {str(e)}'}), 500
+
+@app.route('/api/connectivity_report')
+def api_connectivity_report():
+    """REST API endpoint to generate comprehensive connectivity report"""
+    try:
+        # Load servers from ssh_hosts.json
+        ssh_hosts_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'ssh_hosts.json')
+        
+        try:
+            with open(ssh_hosts_file, 'r') as f:
+                hosts_data = json.load(f)
+                servers = hosts_data.get('hosts', [])
+        except FileNotFoundError:
+            return jsonify({'error': 'ssh_hosts.json file not found'}), 404
+        
+        if not servers:
+            return jsonify({'error': 'No servers configured'}), 400
+        
+        report_servers = []
+        total_servers = len(servers)
+        online_servers = 0
+        offline_servers = 0
+        by_flavor = {}
+        
+        for server in servers:
+            try:
+                # Quick connectivity test
+                test_client = VersaLogIQ()
+                start_time = time.time()
+                
+                success = test_client.connect_to_server(
+                    server['hostname'],
+                    server['user'],
+                    server['password']
+                )
+                
+                connection_time = time.time() - start_time
+                
+                if success:
+                    test_client.ssh_client.close()
+                    status = 'online'
+                    online_servers += 1
+                else:
+                    status = 'offline'
+                    offline_servers += 1
+                
+                # Track by flavor
+                flavor = server['flavour']
+                if flavor not in by_flavor:
+                    by_flavor[flavor] = {'total': 0, 'online': 0}
+                
+                by_flavor[flavor]['total'] += 1
+                if status == 'online':
+                    by_flavor[flavor]['online'] += 1
+                
+                server_info = {
+                    'hostname': server['hostname'],
+                    'name': server['name'],
+                    'flavor': flavor,
+                    'status': status,
+                    'response_time': round(connection_time, 3)
+                }
+                
+                report_servers.append(server_info)
+                
+            except Exception as e:
+                offline_servers += 1
+                flavor = server['flavour']
+                if flavor not in by_flavor:
+                    by_flavor[flavor] = {'total': 0, 'online': 0}
+                by_flavor[flavor]['total'] += 1
+                
+                server_info = {
+                    'hostname': server['hostname'],
+                    'name': server['name'],
+                    'flavor': flavor,
+                    'status': 'error',
+                    'error': str(e)
+                }
+                report_servers.append(server_info)
+        
+        return jsonify({
+            'generated_at': datetime.now().isoformat(),
+            'servers': report_servers,
+            'summary': {
+                'total_servers': total_servers,
+                'online_servers': online_servers,
+                'offline_servers': offline_servers,
+                'availability_percentage': round((online_servers / total_servers) * 100, 1) if total_servers > 0 else 0,
+                'by_flavor': by_flavor
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'Report generation failed: {str(e)}'}), 500
 
 @socketio.on('connect')
 def handle_connect():
